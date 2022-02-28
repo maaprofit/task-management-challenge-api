@@ -13,4 +13,10 @@ UserService.create = async (name) => {
     return User.create({ name })
 }
 
+UserService.findByName = async (name) => {
+    return User.findOne({
+        where: { name }
+    })
+}
+
 module.exports = UserService
