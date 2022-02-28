@@ -2,7 +2,7 @@ const { User } = require('../models')
 
 const UserService = {}
 
-UserService.create = async (name) => {
+UserService.userCreate = async (name) => {
     const usersWithChosenName = await User.findAll({
         where: { name }
     })
@@ -13,7 +13,14 @@ UserService.create = async (name) => {
     return User.create({ name })
 }
 
-UserService.findByName = async (name) => {
+UserService.userCreateOrFind = (name) => {
+    return User.findOrCreate({
+        where: { name },
+        defaults: { name }
+    })
+}
+
+UserService.userFindByName = async (name) => {
     return User.findOne({
         where: { name }
     })
