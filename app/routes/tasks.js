@@ -6,10 +6,13 @@ const {
     taskCreate,
     taskDetails,
     taskUpdateStatus,
+    taskDelete,
     taskFindById,
     taskRelateOwner,
-    taskRelateChild,
-    taskValidateChildren
+    taskValidateChildren,
+    taskFindParentByChildrenTaskId,
+    taskFindChildrenByParentTaskId,
+    taskCheckParentChildrenStatuses
 } = require('../services/task')
 
 const { userFindByName, userCreateOrFind } = require('../services/user')
@@ -62,6 +65,8 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/', validate('create'), async (req, res) => {
+    let insertedId = null
+
     try {
         const errors = validationResult(req);
 
@@ -73,24 +78,33 @@ router.post('/', validate('create'), async (req, res) => {
         }
 
         const body = req.body
+        // create requester user registry:
+        const requester_id = await userCreateOrFind(body.requester)
 
-        const task = await taskCreate({
+        const taskPayload = {
             title: body.title,
             description: body.description || '',
             // set initial status as 'to_do'
             status: 'to_do',
             due_date: body.due_date,
-            requester_id: body.requester_id
-        })
+            requester_id,
+        }
+
+        const task = await taskCreate(taskPayload)
+
+        // set id on payload to use on relations:
+        taskPayload.id = task.id
+
+        // set inserted id to delete task on catch:
+        insertedId = task.id
 
         if (body.children && Array.isArray(body.children)) {
-            await taskValidateChildren(body.children, task)
+            await taskValidateChildren(body.children, taskPayload)
         }
 
         if (body.owners && Array.isArray(body.owners)) {
             for (const owner of body.owners) {
-                const user = await userCreateOrFind(owner)
-                const user_id = user.length ? user[0].id : null
+                const user_id = await userCreateOrFind(owner)
 
                 if (user_id) {
                     // add relation between owner x task
@@ -105,8 +119,19 @@ router.post('/', validate('create'), async (req, res) => {
                 message: 'task has been created',
                 response: task.id,
             })
-    } catch (e) {
-        console.log('e', e)
+    } catch (errors) {
+        // delete task on error
+        if (insertedId) {
+            await taskDelete(insertedId)
+        }
+
+        if (Array.isArray(errors)) {
+            return res
+                .status(422)
+                .json({ errors })
+        }
+
+        throw errors
     }
 })
 
@@ -121,6 +146,7 @@ router.get('/:id', async (req, res) => {
                 title: task.title,
                 description: task.description,
                 due_date: task.due_date,
+                status: task.status,
                 requester: {
                     id: User.id,
                     name: User.name,
@@ -171,10 +197,27 @@ router.put('/status/:id', validate('update'), async (req, res) => {
                 })
         }
 
+        const taskChildrens = await taskFindChildrenByParentTaskId(req.params.id)
+
+        if (taskChildrens.length) {
+            return res
+                .status(400)
+                .json({
+                    message: 'in order to change parent status, you need to complete your children'
+                })
+        }
+
         await taskUpdateStatus(
             req.body.status,
             req.params.id
         )
+
+        // search for task parent:
+        const parent = await taskFindParentByChildrenTaskId(req.params.id)
+
+        // check parent status, after its children update:
+        if (parent)
+            await taskCheckParentChildrenStatuses(parent.id)
 
         res
             .status(200)

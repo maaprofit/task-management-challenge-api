@@ -5,7 +5,11 @@ module.exports = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
-    logging: true,
+    dialectOptions: {
+        useUTC: true,
+    },
+    logging: console.log,
+    timezone: 'UTC',
     pool: {
         max: 5,
         min: 0,

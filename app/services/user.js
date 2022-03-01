@@ -13,11 +13,18 @@ UserService.userCreate = async (name) => {
     return User.create({ name })
 }
 
-UserService.userCreateOrFind = (name) => {
-    return User.findOrCreate({
-        where: { name },
-        defaults: { name }
-    })
+UserService.userCreateOrFind = async (name) => {
+    try {
+        const createdUser = await User.findOrCreate({
+            where: { name },
+            defaults: { name }
+        })
+    
+        if (createdUser && createdUser.length)
+            return Promise.resolve(createdUser[0].id)
+    } catch (error) {
+        return Promise.reject('User could not be created')
+    }
 }
 
 UserService.userFindByName = async (name) => {

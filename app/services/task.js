@@ -33,6 +33,28 @@ TaskService.taskFindById = (id, options) => {
     return Task.findByPk(id, options)
 }
 
+TaskService.taskFindParentByChildrenTaskId = async (id) => {
+    try {
+        const q = `SELECT t.id, t.title, t.status FROM tasks_childrens tc JOIN tasks t ON tc.parent_id = t.id WHERE tc.children_id = ${id} LIMIT 1`
+        const parent = await sequelize.query(q, {
+            type: Sequelize.QueryTypes.SELECT
+        })
+
+        if (parent && parent.length) {
+            return parent[0]
+        }
+    } catch (error) {
+        throw error;
+    }
+}
+
+TaskService.taskFindChildrenByParentTaskId = id => {
+    return TasksChildren.findAll({
+        where: { parent_id: id },
+        include: Task
+    })
+}
+
 TaskService.taskDetails = async (id) => {
     const task = await TaskService.taskFindById(id, {
         include: [User]
@@ -51,10 +73,8 @@ TaskService.taskDetails = async (id) => {
         name: owner.User.name,
     }))
 
-    const children = await TasksChildren.findAll({
-        where: { parent_id: id },
-        include: Task
-    })
+    const children = await TaskService
+        .taskFindChildrenByParentTaskId(id)
 
     // set children list (id, title):
     payload.children = children.map(child => ({
@@ -62,14 +82,14 @@ TaskService.taskDetails = async (id) => {
         title: child.Task.title
     }))
 
-    const q = `SELECT t.id, t.title FROM tasks_childrens tc JOIN tasks t ON tc.parent_id = t.id WHERE tc.children_id = ${id} LIMIT 1`
-    const parent = await sequelize.query(q, {
-        type: Sequelize.QueryTypes.SELECT
-    })
+    // search for task parent:
+    const parent = await TaskService.taskFindParentByChildrenTaskId(id)
 
-    // set parent object (id, title):
-    if (parent && parent.length) {
-        payload.parent = parent[0]
+    if (parent) {
+        payload.parent = {
+            id: parent.id,
+            title: parent.title,
+        }
     }
 
     return payload
@@ -86,6 +106,33 @@ TaskService.taskUpdateStatus = async (status, id) => {
     })
 }
 
+TaskService.taskCheckParentChildrenStatuses = async (parentId) => {
+    const parent = await Task.findByPk(parentId)
+    const children = await TasksChildren.findAll({
+        where: { parent_id: parentId },
+        include: Task
+    })
+
+    const childrenDoingState = children
+        .filter(child => child.Task.status == 'doing')
+
+    const childrenDoneState = children
+        .filter(child => child.Task.status == 'done')
+
+    let parentStatus = parent.status
+
+    if (childrenDoingState.length > 0)
+        parentStatus = 'doing'
+
+    if (childrenDoneState.length == children.length)
+        parentStatus = 'done'
+
+    return Task.update({ status: parentStatus }, {
+        where: {
+            id: parent.id
+        }
+    })
+}
 
 TaskService.taskValidateChildren = async (children, task) => {
     let childIndex = 0
@@ -93,13 +140,31 @@ TaskService.taskValidateChildren = async (children, task) => {
     for (const child of children) {
         let childId = child?.id
 
-        // @todo: validate child parent's
+        if (!!childId) {
+            const childDetails = await TaskService.taskFindById(childId)
+            const childrenFromChild = await TaskService
+                .taskFindChildrenByParentTaskId(childId)
 
-        if (!child?.id || child?.id == '') {
+            const parents = await TasksChildren.findAll({
+                where: {
+                    children_id: childId
+                }
+            })
+
+            if (childDetails.status == 'done') {
+                return Promise
+                    .reject([`child task (index: ${childIndex}) is already in done state`])
+            }
+
+            if (parents.length > 0 || childrenFromChild.length > 0) {
+                return Promise
+                    .reject([`child task (index: ${childIndex}) is already linked with another task`])
+            }
+        } else {
             // validate task title
             if (!child.title || child.title == '') {
                 return Promise
-                    .reject([`task child (index: ${childIndex}) must contain title`])
+                    .reject([`child task (index: ${childIndex}) must contain title`])
             }
 
             if (child.due_date && child.due_date) {
@@ -128,7 +193,9 @@ TaskService.taskValidateChildren = async (children, task) => {
             childId = childTask.id
         }
 
-        await TaskService.taskRelateChild(task.id, childId)
+        if (task.id !== childId) {
+            await TaskService.taskRelateChild(task.id, childId)
+        }
 
         childIndex++
     }
@@ -148,5 +215,10 @@ TaskService.taskRelateChild = (parent_id, children_id) => {
     })
 }
 
+TaskService.taskDelete = (id) => {
+    return Task.destroy({
+        where: { id }
+    })
+}
 
 module.exports = TaskService

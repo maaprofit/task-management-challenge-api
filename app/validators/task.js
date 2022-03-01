@@ -10,15 +10,11 @@ exports.validate = method => {
                     .custom((value) => {
                         return (value.length <= 80)
                     }),
-                body('description', 'Task description must not be empty')
-                    .optional()
-                    .notEmpty(),
                 body('due_date', 'Task due_date must not be empty')
                     .notEmpty(),
                 body('due_date', 'Task due_date must be a valid date (YYYY-MM-DD HH:mm:ss)')
-                    .isISO8601()
-                    .toDate(),
-                body('requester_id', 'Task requester_id must not be empty')
+                    .isISO8601(),
+                body('requester', 'Task requester must not be empty')
                     .notEmpty()
             ]
         case 'update':
