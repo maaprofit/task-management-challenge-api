@@ -8,12 +8,13 @@ exports.validate = method => {
                 body('title', 'Task title must be informed').notEmpty(),
                 body('title', 'Task title must be no longer than 80 characters')
                     .custom((value) => {
-                        return (value.length <= 80)
+                        return (!value || value.length <= 80)
                     }),
                 body('due_date', 'Task due_date must not be empty')
                     .notEmpty(),
                 body('due_date', 'Task due_date must be a valid date (YYYY-MM-DD HH:mm:ss)')
-                    .isISO8601(),
+                    .isISO8601()
+                    .toDate(),
                 body('requester', 'Task requester must not be empty')
                     .notEmpty()
             ]

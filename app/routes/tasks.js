@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
             })
         }
 
-        if (limit <= 0) {
+        if (limit <= 0 || !Number.isInteger(limit)) {
             return res.status(400).json({
                 message: 'limit must be greater than 0'
             })
@@ -138,7 +138,12 @@ router.post('/', validate('create'), async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         if (req.params.id) {
-            const { task, owners, children, parent } = await taskDetails(req.params.id)
+            const details = await taskDetails(req.params.id)
+            
+            if (!details.task)
+                return res.status(404).send()
+
+            const { task, owners, children, parent } = details
             const { User } = task
 
             const response = {
@@ -164,7 +169,7 @@ router.get('/:id', async (req, res) => {
         }
 
         // In case no "id" is informed, return status 404 (not found)
-        res.status(404)
+        res.status(404).send()
     } catch (e) {
         console.error(e)
     }

@@ -14,6 +14,4 @@ app.use(cors())
 // routes:
 require('./routes')(app)
 
-app.listen(port, () => {
-    console.log('Task Management API is listening on port: ' + port)
-})
+module.exports = { app }

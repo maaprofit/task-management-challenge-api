@@ -136,12 +136,20 @@ TaskService.taskCheckParentChildrenStatuses = async (parentId) => {
 
 TaskService.taskValidateChildren = async (children, task) => {
     let childIndex = 0
+    let childToCreate = []
+    let childToRelate = []
 
     for (const child of children) {
         let childId = child?.id
 
         if (!!childId) {
             const childDetails = await TaskService.taskFindById(childId)
+
+            if (!childDetails) {
+                return Promise
+                    .reject([`child task (index: ${childIndex}) does not exists`])
+            }
+
             const childrenFromChild = await TaskService
                 .taskFindChildrenByParentTaskId(childId)
 
@@ -160,6 +168,8 @@ TaskService.taskValidateChildren = async (children, task) => {
                 return Promise
                     .reject([`child task (index: ${childIndex}) is already linked with another task`])
             }
+
+            childToRelate.push(childId)
         } else {
             // validate task title
             if (!child.title || child.title == '') {
@@ -178,7 +188,7 @@ TaskService.taskValidateChildren = async (children, task) => {
             }
 
             // create child task to relate them:
-            const childTask = await TaskService.taskCreate({
+            childToCreate.push({
                 title: child.title,
                 description: child?.description || '',
                 status: 'to_do',
@@ -188,17 +198,24 @@ TaskService.taskValidateChildren = async (children, task) => {
                     : task.due_date,
                 requester_id: task.requester_id,
             })
-
-            // set child created
-            childId = childTask.id
-        }
-
-        if (task.id !== childId) {
-            await TaskService.taskRelateChild(task.id, childId)
         }
 
         childIndex++
     }
+
+    // on the end of iteration, create children tasks relations
+    for (const payload of childToCreate) {
+        const childTask = await TaskService.taskCreate(payload) 
+        // set into child to relate array:
+        childToRelate.push(childTask.id)
+    }
+
+    for (const relationId of childToRelate) {
+        if (task.id !== relationId) {
+            await TaskService.taskRelateChild(task.id, relationId)
+        }
+    }
+
 }
 
 TaskService.taskRelateOwner = (task_id, user_id) => {
@@ -215,7 +232,28 @@ TaskService.taskRelateChild = (parent_id, children_id) => {
     })
 }
 
-TaskService.taskDelete = (id) => {
+TaskService.taskDelete = async (id) => {
+    // remove parent relation with children:
+    await TasksChildren.destroy({
+        where: {
+            parent_id: id
+        }
+    })
+
+    // remove children relation with parent:
+    await TasksChildren.destroy({
+        where: {
+            children_id: id
+        }
+    })
+
+    // remove owners relation:
+    await TasksOwner.destroy({
+        where: {
+            task_id: id,
+        }
+    })
+
     return Task.destroy({
         where: { id }
     })
