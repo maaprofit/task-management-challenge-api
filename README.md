@@ -93,7 +93,7 @@ There are some available parameters, to get a better view of what you can use in
 
 All the parameters are optional to use.
 
-===
+------
 
 2. POST `/tasks`
 
@@ -160,13 +160,13 @@ There are some rules that need to be respected:
 
 Hope you enjoy creating your TODO tasks.
 
-===
+------
 
 3. GET `/tasks/:id`
 
 This endpoint returns all the information of desired task, including all the relations: (parent / children).
 
-===
+------
 
 4. PUT `/tasks/status/:id`
 
