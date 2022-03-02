@@ -1,4 +1,9 @@
-const credentials = {
+let credentials = {
+    username: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
     dialect: 'postgres',
     dialectOptions: {
         useUTC: true,
@@ -14,13 +19,7 @@ const credentials = {
 }
 
 if (process.env.NODE_ENV == 'production') {
-    credentials.uri = process.env.DATABASE
-} else {
-    credentials.username = process.env.DB_USER
-    credentials.password = process.env.DB_PASS
-    credentials.database = process.env.DB_NAME
-    credentials.host = process.env.DB_HOST
-    credentials.port = process.env.DB_PORT
+    credentials = process.env.DATABASE
 }
 
 module.exports = credentials
