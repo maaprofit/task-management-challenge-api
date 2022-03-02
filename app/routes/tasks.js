@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
             })
         }
 
-        if (limit <= 0 || !Number.isInteger(limit)) {
+        if (limit <= 0 || isNaN(limit)) {
             return res.status(400).json({
                 message: 'limit must be greater than 0'
             })

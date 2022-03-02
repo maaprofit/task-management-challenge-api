@@ -4,14 +4,22 @@ const Sequelize = require('sequelize');
 const config = require('../database.js');
 
 const db = {};
-const sequelize = new Sequelize(config, {
-    dialect: 'postgres',
-    dialectOptions: {
-        ssl: process.env.NODE_ENV == 'production',
-        useUTC: true,
-    },
-    timezone: 'UTC'
-});
+
+// create sequelize instance:
+let sequelize;
+
+if (process.env.NODE_ENV == 'production') {
+    sequelize = new Sequelize(process.env.DATABASE_URL, {
+        dialect: 'postgres',
+        dialectOptions: {
+            ssl: process.env.NODE_ENV == 'production',
+            useUTC: true,
+        },
+        timezone: 'UTC'
+    });
+} else {
+    sequelize = new Sequelize(config)
+}
 
 fs.readdirSync(__dirname)
     .filter(
