@@ -4,7 +4,12 @@ const Sequelize = require('sequelize');
 const config = require('../database.js');
 
 const db = {};
-const sequelize = new Sequelize(config);
+const sequelize = new Sequelize(config, {
+    dialect: 'postgres',
+    dialectOptions: {
+        ssl: process.env.NODE_ENV == 'production'
+    }
+});
 
 fs.readdirSync(__dirname)
     .filter(
