@@ -19,7 +19,7 @@ let credentials = {
 }
 
 if (process.env.NODE_ENV == 'production') {
-    credentials = process.env.DATABASE
+    credentials = process.env.DATABASE_URL
 }
 
 module.exports = credentials
