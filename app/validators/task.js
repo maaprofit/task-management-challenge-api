@@ -13,8 +13,7 @@ exports.validate = method => {
                 body('due_date', 'Task due_date must not be empty')
                     .notEmpty(),
                 body('due_date', 'Task due_date must be a valid date (YYYY-MM-DD HH:mm:ss)')
-                    .isISO8601()
-                    .toDate(),
+                    .isISO8601(),
                 body('requester', 'Task requester must not be empty')
                     .notEmpty()
             ]
