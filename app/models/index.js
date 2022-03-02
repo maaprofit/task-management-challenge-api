@@ -7,8 +7,10 @@ const db = {};
 const sequelize = new Sequelize(config, {
     dialect: 'postgres',
     dialectOptions: {
-        ssl: process.env.NODE_ENV == 'production'
-    }
+        ssl: process.env.NODE_ENV == 'production',
+        useUTC: true,
+    },
+    timezone: 'UTC'
 });
 
 fs.readdirSync(__dirname)
