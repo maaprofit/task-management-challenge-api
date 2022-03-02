@@ -14,7 +14,7 @@ const credentials = {
 }
 
 if (process.env.NODE_ENV == 'production') {
-    credentials.url = process.env.DATABASE
+    credentials.uri = process.env.DATABASE
 } else {
     credentials.username = process.env.DB_USER
     credentials.password = process.env.DB_PASS
