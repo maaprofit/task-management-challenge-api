@@ -75,6 +75,8 @@ https://www.getpostman.com/collections/c562e5d3ba11ca177260
 This is a basic REST API that contains a specific logic related to a code challenge. The API purpose is to create
 tasks that has relations with children. And also, where a task can belong to one or more owners.
 
+**Remember:** Configure your `{{base_url}}` on your postman environment.
+
 ### Read this before using our API
 
 - Use your local timezone date, we will always convert and return as UTC. So, you can manage the way you desire on the front-end.
@@ -85,6 +87,7 @@ tasks that has relations with children. And also, where a task can belong to one
 1. GET `/tasks`
 
 Shows a list of the created tasks in database, without any hierarchical tree between parent and childrens.
+
 There are some available parameters, to get a better view of what you can use inside front-end:
 
 - limit `integer`: limit results *(default: 10)* - must be greater than 0
@@ -171,6 +174,7 @@ This endpoint returns all the information of desired task, including all the rel
 4. PUT `/tasks/status/:id`
 
 To move your task status, use this endpoint, I assure you that it is really easy!
+
 Allowed values: `to_do / doing / done`.
 
 You need to pass through body, one of the options above:
